@@ -5,11 +5,42 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
+#from conexion_db import conexion
 import conexion_db
+
+
+#-- Zona de pruebas -------------
+'''
+username = "leoncios"
+try:
+	print("Va a obtener la conexión")
+	conexion = conexion_db.get_conexion()
+	print("Va a comprobar la conexión")
+	if conexion:
+		#print("entró a hacer la consulta")
+		with conexion.cursor() as cursor:
+			inst_sql = "SELECT username, password, client_id, client_secret FROM UserAPI WHERE username = ?"
+			cursor.execute(inst_sql, username)
+			
+			user_db = cursor.fetchone()
+			
+			print(user_db)
+	else:
+		print("No hay conexión")
+except Exception as	e:
+	print("Ocurrió un error al consultar: ")
+finally:
+	if conexion:
+		conexion.close()
+
+'''
+#------------------------------------
+
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_DURATION = 1
-SECRET_KEY = "136f597569ee7e47cd6951276718ac3eca203241e123a944ca2d3de45e6f65ec"   # openssl rand -hex 32
+# openssl rand -hex 32
+SECRET_KEY = "136f597569ee7e47cd6951276718ac3eca203241e123a944ca2d3de45e6f65ec"
 
 app = FastAPI()
 app.title = 'Mi FastAPI'
@@ -21,6 +52,16 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 #-- Modelos ---------------
 
+class User(BaseModel):
+	username: str
+	full_name: str
+	email: str
+	disabled: bool
+
+class UserDB(User):
+	password: str
+
+	
 class UserAPI(BaseModel):
 	username: str
 	full_name: str
@@ -40,8 +81,27 @@ class Movimiento(BaseModel):
 	NumeroMovimiento: int
 	FechaMovimiento: datetime
 	Importe: float
-
 	
+#-- Datos -----------------
+
+x_users_db = {
+	"leoncio": {
+		"username": "leoncio",
+		"full_name": "Leoncio Barrios",
+		"email": "leonciobarriosh@gmail.com",
+		"disabled": False,
+		"password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"  # 123456
+	},
+	"fulano": {
+		"username": "fulano",
+		"full_name": "Fulano de Tal",
+		"email": "fulanodetalh@gmail.com",
+		"disabled": True,
+		"password": "$2a$12$oYSwjKsEJakhlOY95rirJOcoY/1W5VJ/ym8EdJPO09r8ju5xn/e9y"  # 654321
+	}
+}
+
+
 # -- Funciones ----------------------------------------------
 
 def buscar_usuario_bd(username: str):
@@ -49,19 +109,32 @@ def buscar_usuario_bd(username: str):
 	try:
 		conexion = conexion_db.get_conexion()
 		if conexion:
+			#print("entró a hacer la consulta")
 			with conexion.cursor() as cursor:
 				cursor.execute("SELECT * FROM UserAPI WHERE username = ?", username)
+				
 				user_db = cursor.fetchone()
+				
+				#print(user_db)
+		#else:
+		#	print("No hay conexión")
 	except Exception as	e:
 		print("Ocurrió un error al consultar: ")
 	finally:
 		if conexion:
 			conexion.close()
 	return user_db
-
+#----------------------------------------------------------------
+'''
+def search_user_db(username: str):
+	if username in users_db:
+		return UserDB(**users_db[username])
+'''
 def search_user_db(username: str):
 	user_db = buscar_usuario_bd(username)
 	if user_db:
+		#print(f"El usuario encontrado es: {user_db}")
+		
 		return UserAPIDB(
 			username=user_db[1],
 			full_name=user_db[2],
@@ -71,7 +144,13 @@ def search_user_db(username: str):
 			client_id=user_db[6],
 			client_secret=user_db[7]
 		)
-
+ 		#return UserDB(**users_db[username])
+#----------------------------------------------------------------
+'''
+def search_user(username: str):
+	if username in users_db:
+		return User(**users_db[username])
+'''
 def search_user(username: str):
 	user = buscar_usuario_bd(username)
 	if user:
@@ -82,6 +161,7 @@ def search_user(username: str):
 			disabled=user[4]
 		)
 
+#----------------------------------------------------------------
 async def auth_user(token: str = Depends(oauth2)):
 	exception = HTTPException(
 		status_code=status.HTTP_401_UNAUTHORIZED,
@@ -140,6 +220,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 		"access_token": jwt.encode(access_token, SECRET_KEY, algorithm=ALGORITHM),
 		"token_type": "bearer"
 	}
+
 
 @app.get("/users/me")
 async def me(user: UserAPI = Depends(current_user)):   # async def me(user: User = Depends(current_user)):
