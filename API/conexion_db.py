@@ -6,8 +6,6 @@ def get_conexion():
 	#username = "sa"
 	#password = "AdmiraPlus2015"
 
-
-	#print("Empezamos ***********")
 	conexion = None
 	try:
 		""" conexion = pyodbc.connect(
@@ -25,11 +23,8 @@ def get_conexion():
 			'Trusted_Connection=yes;'
 		)
 		
-		# OK! conexión exitosa
-		#print("Conexión exitosa***!!!")
-		#print(f'El obj conexión: {conexion}')
-		
 	except Exception as e:
 		# Atrapar error
 		print("Ocurrió un error al conectar a SQL Server: ")
+	
 	return conexion

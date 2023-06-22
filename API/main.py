@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
@@ -41,7 +41,7 @@ class Movimiento(BaseModel):
 	FechaMovimiento: datetime
 	Importe: float
 
-	
+
 # -- Funciones ----------------------------------------------
 
 def buscar_usuario_bd(username: str):
@@ -148,6 +148,50 @@ async def me(user: UserAPI = Depends(current_user)):   # async def me(user: User
 
 #================================================================================================================================
 @app.post("/Movimientos/GuardarMovimiento")
-async def GuardarMovimiento(mov: Movimiento):
-	return mov.NumeroCuenta
+async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user)):
+	status = False
+	mensaje = ""
+	
+	#- Hacer validaciones básicas. --------------------------------
+	if not mov:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="No se ha recibido ningún movimiento para guardar"
+		)
+	
+	if not mov.NumeroCuenta:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="No hay número de cuenta"
+		)
+	
+	#- Si validación=OK, invocar SP con sus parámetros. ------------
+	
+	try:
+		conexion = conexion_db.get_conexion()
+		if conexion:
+			with conexion.cursor() as cursor:
+				comandoSQL ="exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
+				param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, mov.FechaMovimiento, mov.Importe )
+				#param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, "20230621", mov.Importe )
+				
+				cursor.execute(comandoSQL, param)
+				
+				conexion.commit()
+				
+				status = True
+				mensaje = "OK"
+	except Exception as	e:
+		status = False
+		mensaje = "Hubo una Excepción! No se pudo registrar el movimiento\n" + str(e)
+	finally:
+		if conexion:
+			conexion.close()
+	
+	resp = {
+		"status": status,
+		"mensaje": mensaje
+	}
+	
+	return resp
 
