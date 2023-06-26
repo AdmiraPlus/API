@@ -171,6 +171,7 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 		conexion = conexion_db.get_conexion()
 		if conexion:
 			with conexion.cursor() as cursor:
+				conexion.autocommit = False
 				comandoSQL ="exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
 				param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, mov.FechaMovimiento, mov.Importe )
 				#param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, "20230621", mov.Importe )
@@ -182,6 +183,8 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 				status = True
 				mensaje = "OK"
 	except Exception as	e:
+		if conexion:
+			conexion.rollback()
 		status = False
 		mensaje = "Hubo una Excepción! No se pudo registrar el movimiento\n" + str(e)
 	finally:
