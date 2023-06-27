@@ -17,7 +17,6 @@ SECRET_KEY = "136f597569ee7e47cd6951276718ac3eca203241e123a944ca2d3de45e6f65ec" 
 app = FastAPI()
 app.title = 'Mi FastAPI'
 
-#oauth2 = OAuth2PasswordBearer(tokenUrl="login")
 oauth2 = OAuth2PasswordBearer(tokenUrl="/oauth2/token")
 
 crypt = CryptContext(schemes=["bcrypt"])
