@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 #from conexion_db import conexion
-import conexion_db
+import bak.conexion_db as conexion_db
 
 
 #-- Zona de pruebas -------------

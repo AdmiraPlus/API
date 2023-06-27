@@ -43,7 +43,7 @@ class Movimiento(BaseModel):
 
 # -- Funciones ----------------------------------------------
 
-def buscar_usuario_bd(username: str):
+def search_user(username: str):
 	user_db = None
 	#conexion = None
 	try:
@@ -90,7 +90,7 @@ async def auth_user(token: str = Depends(oauth2)):
 	except JWTError:
 		raise exception
 	
-	return buscar_usuario_bd(username)
+	return search_user(username)
 
 async def current_user(user: User = Depends(auth_user)):
 	if user.disabled:
@@ -107,7 +107,7 @@ async def current_user(user: User = Depends(auth_user)):
 @app.post("/login")
 async def login(form: OAuth2PasswordRequestForm = Depends()):
 	#-- Validar si existe el "username".
-	user = buscar_usuario_bd(form.username)
+	user = search_user(form.username)
 	
 	if not user:
 		raise HTTPException(
