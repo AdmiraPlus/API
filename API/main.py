@@ -57,25 +57,23 @@ def buscar_usuario_bd(username: str):
 						WHERE username = ?
 				"""
 				cursor.execute(sentenciaSQL, username)
-				user_db = cursor.fetchone()
+				user = cursor.fetchone()
 				
+				if user:
+					user_db = User(
+						username=user[0],
+						full_name=user[1],
+						email=user[2],
+						disabled=user[3],
+						password=user[4],
+						client_id=user[5],
+						client_secret=user[6]
+					)
+					
 	except Exception as	e:
 		print("Ocurrió un error al consultar:\n" + str(e) )
 	
 	return user_db
-
-def search_user_db(username: str):
-	user_db = buscar_usuario_bd(username)
-	if user_db:
-		return User(
-			username=user_db[0],
-			full_name=user_db[1],
-			email=user_db[2],
-			disabled=user_db[3],
-			password=user_db[4],
-			client_id=user_db[5],
-			client_secret=user_db[6]
-		)
 
 async def auth_user(token: str = Depends(oauth2)):
 	exception = HTTPException(
@@ -92,7 +90,7 @@ async def auth_user(token: str = Depends(oauth2)):
 	except JWTError:
 		raise exception
 	
-	return search_user_db(username)
+	return buscar_usuario_bd(username)
 
 async def current_user(user: User = Depends(auth_user)):
 	if user.disabled:
