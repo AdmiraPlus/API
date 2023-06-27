@@ -5,8 +5,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
-from conexion_db_c import Conexion
-
+import conexion_db
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_DURATION = 1
@@ -22,11 +21,13 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 #-- Modelos ---------------
 
-class User(BaseModel):
+class UserAPI(BaseModel):
 	username: str
 	full_name: str
 	email: str
 	disabled: bool
+
+class UserAPIDB(UserAPI):
 	password: str
 	client_id: str
 	client_secret: str
@@ -45,36 +46,40 @@ class Movimiento(BaseModel):
 
 def buscar_usuario_bd(username: str):
 	user_db = None
-	#conexion = None
 	try:
-		with Conexion.get_connection_trusted() as conexion:
+		conexion = conexion_db.get_conexion()
+		if conexion:
 			with conexion.cursor() as cursor:
-				sentenciaSQL = """
-					SELECT u.username, u.full_name, u.email,  u.disabled, u.password, c.client_id, c.client_secret
-						FROM UserAPI u
-						JOIN ClientCredentials c
-							ON u.credentials_id = c.id
-						WHERE username = ?
-				"""
-				cursor.execute(sentenciaSQL, username)
+				cursor.execute("SELECT * FROM UserAPI WHERE username = ?", username)
 				user_db = cursor.fetchone()
-				
 	except Exception as	e:
-		print("Ocurrió un error al consultar:\n" + str(e) )
-	
+		print("Ocurrió un error al consultar: ")
+	finally:
+		if conexion:
+			conexion.close()
 	return user_db
 
 def search_user_db(username: str):
 	user_db = buscar_usuario_bd(username)
 	if user_db:
-		return User(
-			username=user_db[0],
-			full_name=user_db[1],
-			email=user_db[2],
-			disabled=user_db[3],
-			password=user_db[4],
-			client_id=user_db[5],
-			client_secret=user_db[6]
+		return UserAPIDB(
+			username=user_db[1],
+			full_name=user_db[2],
+			email=user_db[3],
+			disabled=user_db[4],
+			password=user_db[5],
+			client_id=user_db[6],
+			client_secret=user_db[7]
+		)
+
+def search_user(username: str):
+	user = buscar_usuario_bd(username)
+	if user:
+		return UserAPI(
+			username=user[1],
+			full_name=user[2],
+			email=user[3],
+			disabled=user[4]
 		)
 
 async def auth_user(token: str = Depends(oauth2)):
@@ -92,9 +97,9 @@ async def auth_user(token: str = Depends(oauth2)):
 	except JWTError:
 		raise exception
 	
-	return search_user_db(username)
+	return search_user(username)
 
-async def current_user(user: User = Depends(auth_user)):
+async def current_user(user: UserAPI = Depends(auth_user)):   # async def current_user(user: User = Depends(auth_user)):
 	if user.disabled:
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
@@ -108,23 +113,21 @@ async def current_user(user: User = Depends(auth_user)):
 
 @app.post("/login")
 async def login(form: OAuth2PasswordRequestForm = Depends()):
-	#-- Validar si existe el "username".
-	user = buscar_usuario_bd(form.username)
-	
-	if not user:
+	# -- Validar si existe el "username".
+	user_db = buscar_usuario_bd(form.username)   # user_db = users_db.get(form.username)
+	if not user_db:
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="El usuario no es correcto"
 		)
+	user = search_user_db(form.username)
 	
-	#-- Validar el password.
+	# -- Validar el password.
 	if not crypt.verify(form.password, user.password):
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="El password no es correcto"
 		)
-	
-	#-- Generar el token.
 	
 	# expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_DURATION)
 	
@@ -138,12 +141,16 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 		"token_type": "bearer"
 	}
 
+@app.get("/users/me")
+async def me(user: UserAPI = Depends(current_user)):   # async def me(user: User = Depends(current_user)):
+	return user
+
+
 #================================================================================================================================
 @app.post("/Movimientos/GuardarMovimiento")
 async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user)):
 	status = False
 	mensaje = ""
-	conexion = None
 	
 	#- Hacer validaciones básicas. --------------------------------
 	if not mov:
@@ -161,32 +168,25 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	#- Si validación=OK, invocar SP con sus parámetros. ------------
 	
 	try:
-		#conexion = conexion_db.get_conexion()
-		with Conexion.get_connection_trusted() as conexion:
-			
-			conexion.autocommit = False
+		conexion = conexion_db.get_conexion()
+		if conexion:
 			with conexion.cursor() as cursor:
-				
+				conexion.autocommit = False
 				comandoSQL ="exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
-				param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, 
-	     				 mov.FechaMovimiento, mov.Importe )
+				param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, mov.FechaMovimiento, mov.Importe )
+				#param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, "20230621", mov.Importe )
 				
-				try:
-					cursor.execute(comandoSQL, param)
-					
-					conexion.commit()
-					
-					status = True
-					mensaje = "OK"
-					
-				except Exception as e:
-					status = False
-					mensaje = "Hubo una Excepción! No se pudo registrar el movimiento\n" + str(e)
-					conexion.rollback()
-					
+				cursor.execute(comandoSQL, param)
+				
+				conexion.commit()
+				
+				status = True
+				mensaje = "OK"
 	except Exception as	e:
+		if conexion:
+			conexion.rollback()
 		status = False
-		mensaje = "Ocurrió un error al establecer la conexión a la BBDD.\n" + str(e)
+		mensaje = "Hubo una Excepción! No se pudo registrar el movimiento\n" + str(e)
 	finally:
 		if conexion:
 			conexion.close()
