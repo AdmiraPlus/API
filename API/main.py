@@ -5,6 +5,8 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
+import base64
+
 from conexion_db_c import Conexion
 
 
@@ -15,7 +17,8 @@ SECRET_KEY = "136f597569ee7e47cd6951276718ac3eca203241e123a944ca2d3de45e6f65ec" 
 app = FastAPI()
 app.title = 'Mi FastAPI'
 
-oauth2 = OAuth2PasswordBearer(tokenUrl="login")
+#oauth2 = OAuth2PasswordBearer(tokenUrl="login")
+oauth2 = OAuth2PasswordBearer(tokenUrl="/oauth2/token")
 
 crypt = CryptContext(schemes=["bcrypt"])
 
@@ -104,11 +107,28 @@ async def current_user(user: User = Depends(auth_user)):
 
 # -- EndPoints ---------------------------------------------
 
-@app.post("/login")
-async def login(form: OAuth2PasswordRequestForm = Depends()):
-	#-- Validar si existe el "username".
+@app.post("/oauth2/token")
+async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
+	
+	#-- Obtener los header de la solicitud(Request).
+	headers = request.headers
+	
+	#-- Obtener el header específico (Authorization).
+	authorization_header = headers.get("Authorization")
+	
+	#-- Extraer solo el dato codificado base64.
+	authorization_credentials = authorization_header.replace("Basic ", "")
+	
+	#-- Decodificar la cadena.
+	decoded_credentials = base64.b64decode(authorization_credentials).decode("utf-8")
+	
+	#-- Pasar a variables los datos separados por los dos puntos (:).
+	client_id, client_secret = decoded_credentials.split(":")
+	
+	#####################################################################
 	user = search_user(form.username)
 	
+	#-- Validad si existe el usuario.
 	if not user:
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
@@ -120,6 +140,20 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="El password no es correcto"
+		)
+	
+	#-- Validar el client_id.
+	if client_id != user.client_id:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="El client_id no es correcto"
+		)
+	
+	#-- Validar el client_crecret.
+	if client_secret != user.client_secret:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="El client_secret no es correcto"
 		)
 	
 	#-- Generar el token.
@@ -136,7 +170,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 		"token_type": "bearer"
 	}
 
-#================================================================================================================================
+
 @app.post("/Movimientos/GuardarMovimiento")
 async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user)):
 	status = False
@@ -196,3 +230,4 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	
 	return resp
 
+	
