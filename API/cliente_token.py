@@ -21,7 +21,7 @@ headersList = {
     "Content-Type": "multipart/form-data; boundary=kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A"
 }
 
-payload = "--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"username\"\r\n\r\nleoncio\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"password\"\r\n\r\n123456\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A--\r\n"
+payload = f"--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"username\"\r\n\r\n{username}\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"password\"\r\n\r\n{password}\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A--\r\n"
 
 conn.request("POST", "/oauth2/token", payload, headersList)
 response = conn.getresponse()
