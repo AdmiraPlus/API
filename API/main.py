@@ -49,39 +49,6 @@ class Movimiento(BaseModel):
 
 
 # -- Funciones ----------------------------------------------
-'''
-def search_user(username: str):
-	user_db = None
-	#conexion = None
-	try:
-		with Conexion.get_connection_trusted() as conexion:
-			with conexion.cursor() as cursor:
-				sentenciaSQL = """
-					SELECT u.username, u.full_name, u.email,  u.disabled, u.password, c.client_id, c.client_secret
-						FROM UserAPI u
-						JOIN ClientCredentials c
-							ON u.credentials_id = c.id
-						WHERE username = ?
-				"""
-				cursor.execute(sentenciaSQL, username)
-				user = cursor.fetchone()
-				
-				if user:
-					user_db = User(
-						username=user[0],
-						full_name=user[1],
-						email=user[2],
-						disabled=user[3],
-						password=user[4],
-						client_id=user[5],
-						client_secret=user[6]
-					)
-					
-	except Exception as	e:
-		print("Ocurrió un error al consultar:\n" + str(e) )
-	
-	return user_db
-'''
 
 def search_user(username: str):
 	user_db = None
@@ -151,11 +118,7 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), c
 	
 	#-- Obtener los header de la solicitud(Request).
 	headers = request.headers
-	""" 
-	print("---------")
-	print(headers)
-	print("---------")
-	 """
+	
 	#-- Obtener el header específico (Authorization).
 	authorization_header = headers.get("Authorization")
 	
@@ -246,7 +209,7 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 			
 			comandoSQL ="exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
 			param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, 
-						mov.FechaMovimiento, mov.Importe )
+					 mov.FechaMovimiento, mov.Importe )
 			
 			try:
 				cursor.execute(comandoSQL, param)
