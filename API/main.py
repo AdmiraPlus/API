@@ -114,7 +114,7 @@ async def current_user(user: User = Depends(auth_user)):
 # -- EndPoints ---------------------------------------------
 
 @app.post("/oauth2/token", status_code=200)
-async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), credentials: HTTPBasicCredentials = Depends(security)):
+async def login(request: Request,  credentials: HTTPBasicCredentials = Depends(security)):
 	
 	#-- Obtener los header de la solicitud(Request).
 	headers = request.headers
@@ -131,19 +131,22 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), c
 	#-- Pasar a variables los datos separados por los dos puntos (:).
 	client_id, client_secret = decoded_credentials.split(":")
 	
+	body = await request.json()
+	username = body.get("username")
+	password = body.get("password")
+	
 	#####################################################################
-	user = search_user(form.username)
+	user = search_user(username)
 	
 	#-- Validad si existe el usuario.
 	if not user:
 		raise HTTPException(
-			#status_code=status.HTTP_400_BAD_REQUEST,
 			status_code=status.HTTP_401_UNAUTHORIZED,
 			detail="El usuario no es correcto"
 		)
 	
 	#-- Validar el password.
-	if not crypt.verify(form.password, user.password):
+	if not crypt.verify(password, user.password):
 		raise HTTPException(
 			status_code=status.HTTP_401_UNAUTHORIZED,
 			detail="El password no es correcto"
