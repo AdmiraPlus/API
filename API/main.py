@@ -29,6 +29,10 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 #-- Modelos ---------------
 
+class AccessData(BaseModel):
+	username: str
+	password: str
+
 class User(BaseModel):
 	username: str
 	full_name: str
@@ -114,7 +118,7 @@ async def current_user(user: User = Depends(auth_user)):
 # -- EndPoints ---------------------------------------------
 
 @app.post("/oauth2/token", status_code=200)
-async def login(request: Request,  credentials: HTTPBasicCredentials = Depends(security)):
+async def login(request: Request, AccessData: AccessData, credentials: HTTPBasicCredentials = Depends(security)):
 	
 	#-- Obtener los header de la solicitud(Request).
 	headers = request.headers
@@ -131,9 +135,9 @@ async def login(request: Request,  credentials: HTTPBasicCredentials = Depends(s
 	#-- Pasar a variables los datos separados por los dos puntos (:).
 	client_id, client_secret = decoded_credentials.split(":")
 	
-	body = await request.json()
-	username = body.get("username")
-	password = body.get("password")
+	#-- Obtener el username y password desde los parámetros en el body.
+	username = AccessData.username
+	password = AccessData.password
 	
 	#####################################################################
 	user = search_user(username)
