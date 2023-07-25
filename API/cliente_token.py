@@ -1,4 +1,5 @@
 import http.client
+import json
 import base64
 
 conn = http.client.HTTPConnection("127.0.0.1", 8000)
@@ -16,12 +17,17 @@ base64_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8
 
 headersList = {
     "Accept": "application/json",
-    "Authorization": "Basic MTIzNDU2Nzg5MDowOTg3NjU0MzIx",
-    "Authorization": f"Basic {base64_credentials}",
-    "Content-Type": "multipart/form-data; boundary=kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A"
+    "Content-Type": "application/json; charset=UTF-8",
+    "Authorization": f"Basic {base64_credentials}"
 }
 
-payload = f"--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"username\"\r\n\r\n{username}\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A\r\nContent-Disposition: form-data; name=\"password\"\r\n\r\n{password}\r\n--kljmyvW1ndjXaOEAg4vPm6RBUqO6MC5A--\r\n"
+param = {
+  "grant_type": "password",
+  "username": "leoncio",
+  "password": "123456"
+}
+
+payload = json.dumps(param)
 
 conn.request("POST", "/oauth2/token", payload, headersList)
 response = conn.getresponse()
