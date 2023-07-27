@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Body
 from typing import Annotated
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBasic, HTTPBasicCredentials
@@ -116,9 +116,11 @@ async def current_user(user: User = Depends(auth_user)):
 
 
 # -- EndPoints ---------------------------------------------
+#async def login(request: Request, AccessData: AccessData, credentials: HTTPBasicCredentials = Depends(security)):
+#async def login(request: Request, AccessData: AccessData, credentials: HTTPBasicCredentials = Depends(security), form: OAuth2PasswordRequestForm = Depends()):
 
 @app.post("/oauth2/token", status_code=200)
-async def login(request: Request, AccessData: AccessData, credentials: HTTPBasicCredentials = Depends(security)):
+async def login(request: Request, AccessData: AccessData = Body(...), credentials: HTTPBasicCredentials = Depends(security)):
 	
 	#-- Obtener los header de la solicitud(Request).
 	headers = request.headers
@@ -190,6 +192,7 @@ async def login(request: Request, AccessData: AccessData, credentials: HTTPBasic
 		"expires_in": expire_in_seconds
 	}
 
+#async def GuardarMovimiento(mov: Movimiento, AccessData: AccessData, token: str = Depends(current_user)):
 @app.post("/Movimientos/GuardarMovimiento", status_code=201)
 async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user)):
 	status = False
