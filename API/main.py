@@ -202,7 +202,7 @@ async def login(request: Request, credentials: HTTPBasicCredentials = Depends(se
 	}
 
 
-@app.post("/Movimientos/GuardarMovimiento", status_code=201)
+@app.post("/Movimientos/GuardarMovimiento", status_code=200)
 async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user)):
 	status = False
 	mensaje = ""
@@ -244,8 +244,8 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 				conexion.rollback()
 				
 	resp = {
-		"status": status,
-		"mensaje": mensaje
+		"Status": status,
+		"Mensaje": mensaje
 	}
 	
 	return resp
