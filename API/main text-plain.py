@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import base64, os
 from conexion_db_c import Conexion
 
+import json
+
 from urllib.parse import parse_qs
 
 
@@ -117,6 +119,85 @@ async def current_user(user: User = Depends(auth_user)):
 
 
 # -- EndPoints ---------------------------------------------
+'''
+@app.post("/oauth2/token", status_code=200)
+async def login(request: Request, AccessData: AccessData = Body(...), credentials: HTTPBasicCredentials = Depends(security)):
+	
+	#-- Obtener los header de la solicitud(Request).
+	headers = request.headers
+	
+	#-- Obtener el header específico (Authorization).
+	authorization_header = headers.get("Authorization")
+	
+	#-- Extraer solo el dato codificado base64.
+	authorization_credentials = authorization_header.replace("Basic ", "")
+	
+	#-- Decodificar la cadena.
+	decoded_credentials = base64.b64decode(authorization_credentials).decode("utf-8")
+	
+	#-- Pasar a variables los datos separados por los dos puntos (:).
+	client_id, client_secret = decoded_credentials.split(":")
+	
+	#-- Obtener el username y password desde los parámetros en el body.
+	grant_type = AccessData.grant_type
+	username = AccessData.username
+	password = AccessData.password
+	
+	#####################################################################
+	user = search_user(username)
+	
+	#-- Validad si existe el usuario.
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="El usuario no es correcto"
+		)
+	
+	#-- Validar el password.
+	if not crypt.verify(password, user.password):
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="El password no es correcto"
+		)
+	
+	#-- Validar el client_id.
+	if client_id != user.client_id:
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="El client_id no es correcto",
+			headers={"WWW-Authenticate": "Basic"}
+		)
+	
+	#-- Validar el client_crecret.
+	if client_secret != user.client_secret:
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="El client_secret no es correcto",
+			headers={"WWW-Authenticate": "Basic"}
+		)
+	
+	#-- Generar el token.
+	
+	expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_DURATION)
+	
+	difference = expire - datetime.utcnow()
+	expire_in_seconds = difference.total_seconds()
+	
+	access_token = {
+		"sub": user.username,
+		"exp": expire
+	}
+	
+	return {
+		"access_token": jwt.encode(access_token, SECRET_KEY, algorithm=ALGORITHM),
+		"token_type": "bearer",
+		"expires_in": expire_in_seconds
+	}
+'''
+
+
+#------
+#async def login(request: Request, body: str = Body(..., media_type='text/plain'), credentials: HTTPBasicCredentials = Depends(security)):
 
 @app.post("/oauth2/token", status_code=200)
 async def login(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
@@ -135,6 +216,16 @@ async def login(request: Request, credentials: HTTPBasicCredentials = Depends(se
 	
 	#-- Pasar a variables los datos separados por los dos puntos (:).
 	client_id, client_secret = decoded_credentials.split(":")
+	
+	''' funciona
+    # Parsear los datos en el cuerpo de la solicitud
+	params = dict(param.split('=') for param in body.split('&'))
+	
+	# Obtener los valores de los parámetros grant_type, username y password
+	grant_type = params.get('grant_type')
+	username = params.get('username')
+	password = params.get('password')
+	'''
 	
 	# Obtener el contenido del body como bytes
 	body_bytes = await request.body()

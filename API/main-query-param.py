@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request, Body, Form
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer, HTTPBasic, HTTPBasicCredentials
 from jose import jwt, JWTError
@@ -7,10 +7,6 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import base64, os
 from conexion_db_c import Conexion
-
-from urllib.parse import parse_qs
-
-
 
 #-- Cargar las variables de entorno.
 load_dotenv()
@@ -28,11 +24,6 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 
 #-- Modelos ---------------
-
-class AccessData(BaseModel):
-	grant_type: str
-	username: str
-	password: str
 
 class User(BaseModel):
 	username: str
@@ -119,7 +110,7 @@ async def current_user(user: User = Depends(auth_user)):
 # -- EndPoints ---------------------------------------------
 
 @app.post("/oauth2/token", status_code=200)
-async def login(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
+async def login(request: Request, username:str, password:str, credentials: HTTPBasicCredentials = Depends(security)):
 	
 	#-- Obtener los header de la solicitud(Request).
 	headers = request.headers
@@ -136,19 +127,10 @@ async def login(request: Request, credentials: HTTPBasicCredentials = Depends(se
 	#-- Pasar a variables los datos separados por los dos puntos (:).
 	client_id, client_secret = decoded_credentials.split(":")
 	
-	# Obtener el contenido del body como bytes
-	body_bytes = await request.body()
-	
-	# Decodificar el contenido del body como texto
-	body_text = body_bytes.decode("utf-8")
-	
-	# Obtener los parámetros del body como texto sin formato
-	params_dict = parse_qs(body_text)
-	
-	# Extraer los valores de los parámetros
-	grant_type = params_dict.get("grant_type", [None])[0]
-	username = params_dict.get("username", [None])[0]
-	password = params_dict.get("password", [None])[0]	
+	# Obtener los parámetros de tipo query string
+	grant_type = request.query_params.get('grant_type')
+	username = request.query_params.get('username')
+	password = request.query_params.get('password')
 	
 	#####################################################################
 	user = search_user(username)
@@ -157,7 +139,7 @@ async def login(request: Request, credentials: HTTPBasicCredentials = Depends(se
 	if not user:
 		raise HTTPException(
 			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="El usuario no es correcto"
+			detail=f"El usuario:{user}  no es correcto. Datos recibidos: username:{username} y password:{password}"
 		)
 	
 	#-- Validar el password.
@@ -196,10 +178,10 @@ async def login(request: Request, credentials: HTTPBasicCredentials = Depends(se
 	}
 	
 	return {
-		"access_token": jwt.encode(access_token, SECRET_KEY, algorithm=ALGORITHM),
-		"token_type": "bearer",
-		"expires_in": expire_in_seconds
-	}
+        "access_token": jwt.encode(access_token, SECRET_KEY, algorithm=ALGORITHM),
+        "token_type": "bearer",
+        "expires_in": expire_in_seconds
+    }
 
 
 @app.post("/Movimientos/GuardarMovimiento", status_code=201)
@@ -249,3 +231,5 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	}
 	
 	return resp
+
+

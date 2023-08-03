@@ -4,6 +4,7 @@ import base64
 
 conn = http.client.HTTPConnection("127.0.0.1", 8000)
 
+grant_type = "password"
 username = "leoncio"
 password = "123456"
 client_id = "1234567890"
@@ -23,10 +24,11 @@ param = {
   "username": "leoncio",
   "password": "123456"
 }
-
 payload = json.dumps(param)
 
 conn.request("POST", "/oauth2/token", payload, headersList)
+
+
 response = conn.getresponse()
 result = response.read()
 
