@@ -1,0 +1,19 @@
+* Application.
+	1.- Path:
+		C:\WebAPI\venv\Scripts\uvicorn.exe
+
+	2.- Startup subdirectory:
+		C:\WebAPI\API
+
+	3.- Arguments:
+		main:app
+
+* Details.
+	1.- Display name:
+		WebAPI
+	
+	2.- Description:
+		Servicio WebAPI
+	
+	3.- Startup type:
+		Automatic
