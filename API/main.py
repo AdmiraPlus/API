@@ -249,3 +249,11 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	}
 	
 	return resp
+
+
+"""
+Para ejecutar la aplicación en FastAPI:
+
+uvicorn main:app --reload
+
+"""

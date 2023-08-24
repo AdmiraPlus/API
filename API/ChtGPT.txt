@@ -1,0 +1,42 @@
+Si deseas ejecutar la API FastAPI sin tener que abrir una ventana de comandos manualmente en el servidor, puedes configurarla para que se inicie como un servicio de Windows. De esta manera, la API se iniciará automáticamente cuando se inicie el servidor y se ejecutará en segundo plano. Puedes lograr esto utilizando la herramienta "NSSM" (Non-Sucking Service Manager). A continuación, te indico los pasos para hacerlo:
+
+1. *Descargar NSSM:*
+
+Descarga NSSM desde su sitio web oficial: https://nssm.cc/download
+
+2. *Instalar NSSM:*
+
+Descomprime el archivo descargado y coloca el archivo `nssm.exe` en un directorio accesible, por ejemplo, `C:\nssm`.
+
+3. *Crear el Servicio:*
+
+Abre una ventana de comandos con privilegios de administrador y navega al directorio donde tienes el archivo `nssm.exe`.
+
+Ejecuta el siguiente comando para crear el servicio:
+
+bash
+nssm install FastAPIService
+
+
+Esto abrirá una ventana donde puedes configurar el servicio:
+
+- En la pestaña "Application", establece el "Path" hacia tu instalación de Python (por ejemplo, `C:\Python39\python.exe`).
+- En "Startup directory", coloca la ruta del directorio donde tienes tu archivo `start_api.py`.
+- En "Arguments", coloca la ruta completa de tu archivo `start_api.py` (por ejemplo, `C:\path\to\your\app\start_api.py`).
+
+4. *Configurar el Servicio:*
+
+Después de configurar los campos necesarios, ve a la pestaña "Details".
+
+- Cambia el "Display name" y "Description" según prefieras.
+- Asegúrate de establecer el tipo de inicio en "Automatic" para que el servicio se inicie automáticamente cuando se inicie el servidor.
+
+5. *Iniciar el Servicio:*
+
+Ve a los "Servicios" de Windows (puedes buscar "services.msc" en el menú Inicio) y busca el servicio que acabas de crear ("FastAPIService" en este caso).
+
+Haz clic derecho sobre él y selecciona "Iniciar" para iniciar el servicio.
+
+Una vez iniciado, la API FastAPI se ejecutará en segundo plano como un servicio de Windows y se iniciará automáticamente cada vez que se inicie el servidor.
+
+Recuerda que estos pasos son una guía general y podrían variar según tu configuración específica del servidor y tus necesidades.
