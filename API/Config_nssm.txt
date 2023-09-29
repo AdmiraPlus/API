@@ -1,9 +1,9 @@
 * Application.
 	1.- Path:
-		C:\WebAPI\venv\Scripts\uvicorn.exe
+		C:\MAASoft\APIRest\API\venv\Scripts
 
 	2.- Startup subdirectory:
-		C:\WebAPI\API
+		C:\MAASoft\APIRest\API
 
 	3.- Arguments:
 		main:app

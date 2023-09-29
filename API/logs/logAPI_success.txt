@@ -1,0 +1,2 @@
+*2023-09-29 16:24:44.431998 => El movimiento se registró correctamente: CUIT: 2060202020, NumeroCuenta: 205001, CodigoMovimiento: MOVIMIENTO prueba, TipoMovimiento: C, NumeroMovimiento: 20010, FechaMovimiento2023-09-29 14:33:16, Importe: 1000.0
+*2023-09-29 16:36:37.107851 => El movimiento se registró correctamente: CUIT: 2060202020, NumeroCuenta: 205002, CodigoMovimiento: MOVIMIENTO prueba, TipoMovimiento: C, NumeroMovimiento: 20020, FechaMovimiento2023-09-29 14:33:16, Importe: 2000.0

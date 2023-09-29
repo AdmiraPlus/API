@@ -16,7 +16,7 @@ from urllib.parse import parse_qs
 load_dotenv()
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_DURATION = 1
+ACCESS_TOKEN_DURATION = 10
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 app = FastAPI()
@@ -28,12 +28,6 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 
 #-- Modelos ---------------
-
-class AccessData(BaseModel):
-	grant_type: str
-	username: str
-	password: str
-
 class User(BaseModel):
 	username: str
 	full_name: str
@@ -209,12 +203,16 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	
 	#- Hacer validaciones básicas. --------------------------------
 	if not mov:
+		message = "No se ha recibido ningún movimiento para guardar."
+		write_log("logs/logAPI_fail.txt", message)
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="No se ha recibido ningún movimiento para guardar"
 		)
 	
 	if not mov.NumeroCuenta:
+		message = "No hay número de cuenta."
+		write_log("logs/logAPI_fail.txt", message)
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="No hay número de cuenta"
@@ -226,22 +224,43 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 		conexion.autocommit = False
 		with conexion.cursor() as cursor:
 			
-			comandoSQL ="exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
+			comandoSQL = "exec GuardarMovimiento @cuit=?, @Cuenta=?, @CodMov=?, @TipoMov=?, @Numero=?, @Fecha=?, @Importe=?"
 			param = (mov.CuitMutual, mov.NumeroCuenta, mov.CodigoMovimiento, mov.TipoMovimiento, mov.NumeroMovimiento, 
 					 mov.FechaMovimiento, mov.Importe )
 			
 			try:
 				cursor.execute(comandoSQL, param)
 				
-				conexion.commit()
-				
-				status = True
-				mensaje = "OK"
-				
 			except Exception as e:
 				status = False
 				mensaje = "Hubo una Excepción! No se pudo registrar el movimiento: " + str(e)
+				
+				#-- Se registra la excepción en el log.
+				message = f"{datetime.today()} => Hubo una Excepción! No se pudo registrar el movimiento: Exceptción: {e}, CUIT: {mov.CuitMutual}, NumeroCuenta: {mov.NumeroCuenta}, CodigoMovimiento: {mov.CodigoMovimiento}, TipoMovimiento: {mov.TipoMovimiento}, NumeroMovimiento: {mov.NumeroMovimiento}, FechaMovimiento{mov.FechaMovimiento}, Importe: {mov.Importe}\n"
+				write_log("logs/logAPI_exceptions.txt", message)
+				
 				conexion.rollback()
+				
+			else:
+				conexion.commit()
+				
+				#-- Comprobar si el registro fue realizado efectivamente.
+				comandoSQL = "SELECT COUNT(*) FROM AMVMovimientos WHERE cuit=? and NumeroCuenta=? and CodigoMovimiento=? and TipoMovimiento=? and NumeroMovimiento=? and FechaMovimiento=CONVERT(DATETIME, ?, 120) and Importe=?"
+				
+				cursor.execute(comandoSQL, param)
+				
+				if cursor.fetchone():
+					#-- Se registró con éxito.
+					message = f"{datetime.today()} => El movimiento se registró correctamente: CUIT: {mov.CuitMutual}, NumeroCuenta: {mov.NumeroCuenta}, CodigoMovimiento: {mov.CodigoMovimiento}, TipoMovimiento: {mov.TipoMovimiento}, NumeroMovimiento: {mov.NumeroMovimiento}, FechaMovimiento{mov.FechaMovimiento}, Importe: {mov.Importe}\n"
+					write_log("logs/logAPI_success.txt", message)
+					
+				else:
+					#-- No se registró.
+					message = f"{datetime.today()} => El movimiento NO se registró: CUIT: {mov.CuitMutual}, NumeroCuenta: {mov.NumeroCuenta}, CodigoMovimiento: {mov.CodigoMovimiento}, TipoMovimiento: {mov.TipoMovimiento}, NumeroMovimiento: {mov.NumeroMovimiento}, FechaMovimiento{mov.FechaMovimiento}, Importe: {mov.Importe}\n"
+					write_log("logs/logAPI_fail.txt", message)
+				
+				status = True
+				mensaje = "OK"
 				
 	resp = {
 		"Status": status,
@@ -250,6 +269,10 @@ async def GuardarMovimiento(mov: Movimiento, token: str = Depends(current_user))
 	
 	return resp
 
+def write_log(filelog, message):
+	with open(filelog, "a", encoding="utf-8") as file:
+		file.write(message)
+	
 
 """
 Para ejecutar la aplicación en FastAPI:
