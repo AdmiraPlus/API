@@ -16,7 +16,7 @@ from urllib.parse import parse_qs
 load_dotenv()
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_DURATION = 10
+ACCESS_TOKEN_DURATION = 1
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 app = FastAPI()
