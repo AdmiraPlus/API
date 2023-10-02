@@ -11,7 +11,6 @@ from conexion_db_c import Conexion
 from urllib.parse import parse_qs
 
 
-
 #-- Cargar las variables de entorno.
 load_dotenv()
 
